@@ -1,4 +1,8 @@
 # crm-fastify-prisma-sqlite
+![image](https://github.com/user-attachments/assets/1dc65b3c-8eb3-4b4c-b865-2353c857b4b4)
+![image](https://github.com/user-attachments/assets/44acc0e3-5eec-475b-83fc-4612524be5e3)
+![image](https://github.com/user-attachments/assets/b203e53b-7ad7-48b9-8a90-e21e786ada75)
+
 
 ### 1. Faça um clone do projeto 
 
