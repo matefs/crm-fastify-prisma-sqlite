@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>CRM Frontend</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body>
+  <div id="app">
+    <div v-if="!token">
+      <h2 v-if="isLogin">Login</h2>
+      <h2 v-else>Registro</h2>
+
+      <form @submit.prevent="isLogin ? login() : register()">
+        <input type="email" v-model="form.email" placeholder="Email" required><br>
+        <input type="text" v-model="form.name" placeholder="Nome" v-if="!isLogin" required><br>
+        <input type="password" v-model="form.password" placeholder="Senha" required><br>
+        <input type="text" v-model="form.orgName" placeholder="Organização" v-if="!isLogin" required><br>
+        <button type="submit">{{ isLogin ? 'Entrar' : 'Registrar' }}</button>
+      </form>
+
+      <p>
+        <a href="#" @click.prevent="isLogin = !isLogin">
+          {{ isLogin ? 'Não tem conta? Registrar' : 'Já tem conta? Login' }}
+        </a>
+      </p>
+    </div>
+
+    <div v-else>
+      <h2>Bem-vindo ao CRM</h2>
+      <button @click="logout">Sair</button>
+
+      <h3>Cadastrar Lead</h3>
+      <form @submit.prevent="createLead">
+        <input type="text" v-model="lead.name" placeholder="Nome" required><br>
+        <input type="text" v-model="lead.company" placeholder="Empresa"><br>
+        <input type="text" v-model="lead.title" placeholder="Cargo"><br>
+        <input type="email" v-model="lead.email" placeholder="Email"><br>
+        <input type="text" v-model="lead.phone" placeholder="Telefone"><br>
+        <input type="text" v-model="lead.source" placeholder="Origem"><br>
+        <input type="text" v-model="lead.stage" placeholder="Estágio"><br>
+        <button type="submit">Salvar Lead</button>
+      </form>
+
+      <h3>Leads Cadastrados</h3>
+      <button @click="loadLeads">🔄 Atualizar lista</button>
+      <ul>
+        <li v-for="lead in leads" :key="lead.id">
+          <strong>{{ lead.name }}</strong> ({{ lead.company || 'Empresa não informada' }}) — {{ lead.email || 'sem email' }}
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          isLogin: true,
+          token: localStorage.getItem("token"),
+          form: {
+            email: '',
+            name: '',
+            password: '',
+            orgName: ''
+          },
+          lead: {
+            name: '', company: '', title: '',
+            email: '', phone: '', source: '', stage: ''
+          },
+          leads: []
+        };
+      },
+      methods: {
+        async login() {
+          const res = await fetch("http://localhost:3000/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: this.form.email,
+              password: this.form.password
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            this.token = data.token;
+            localStorage.setItem("token", data.token);
+            this.loadLeads();
+          } else {
+            alert(data.message || "Erro no login");
+          }
+        },
+        async register() {
+          const res = await fetch("http://localhost:3000/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(this.form)
+          });
+          const data = await res.json();
+          if (res.ok) {
+            this.token = data.token;
+            localStorage.setItem("token", data.token);
+            this.loadLeads();
+          } else {
+            alert(data.message || "Erro no registro");
+          }
+        },
+        async createLead() {
+          const res = await fetch("http://localhost:3000/leads", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${this.token}`
+            },
+            body: JSON.stringify(this.lead)
+          });
+          if (res.ok) {
+            alert("Lead cadastrado com sucesso!");
+            this.lead = {
+              name: '', company: '', title: '',
+              email: '', phone: '', source: '', stage: ''
+            };
+            this.loadLeads();
+          } else {
+            const err = await res.json();
+            alert(err.message || "Erro ao cadastrar lead");
+          }
+        },
+        async loadLeads() {
+          const res = await fetch("http://localhost:3000/leads", {
+            headers: { Authorization: `Bearer ${this.token}` }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            this.leads = data;
+          } else {
+            alert(data.message || "Erro ao carregar leads");
+          }
+        },
+        logout() {
+          localStorage.removeItem("token");
+          this.token = null;
+          this.leads = [];
+        }
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>
